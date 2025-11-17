@@ -17,18 +17,29 @@ export default function CadastroPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [echoResponse, setEchoResponse] = useState<any>(null);
+    const [showModal, setShowModal] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        
+        // Validate CPF has 11 digits
+        const rawCPF = cpf.replace(/\D/g, '');
+        if (rawCPF.length !== 11) {
+            setError('CPF deve ter 11 dígitos');
+            return;
+        }
+        
+        // Show confirmation modal
+        setShowModal(true);
+    };
+
+    const confirmAndSubmit = async () => {
+        setShowModal(false);
         setLoading(true);
         
         try {
-            // Validate CPF has 11 digits
             const rawCPF = cpf.replace(/\D/g, '');
-            if (rawCPF.length !== 11) {
-                throw new Error('CPF deve ter 11 dígitos');
-            }
             
             // Send form to /api/echo and display the returned payload
             const echoRes = await fetch('/api/echo', {
@@ -112,6 +123,41 @@ export default function CadastroPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Modal de Confirmação CPF */}
+                {showModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full space-y-4">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">
+                                Confirme seu CPF
+                            </h2>
+                            
+                            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-center">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                    Por favor, confirme que seu CPF está correto:
+                                </p>
+                                <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">
+                                    {cpf}
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="flex-1 py-2.5 px-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-lg transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmAndSubmit}
+                                    className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
+                                >
+                                    Confirmar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );

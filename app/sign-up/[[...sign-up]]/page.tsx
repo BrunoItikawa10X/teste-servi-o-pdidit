@@ -12,7 +12,7 @@ export default function Page() {
     console.debug('[sign-up] isLoaded=', isLoaded, 'isSignedIn=', isSignedIn)
     if (isLoaded && isSignedIn) {
       // use replace to avoid leaving sign-up in history
-      router.replace('/cadastro')
+      router.replace('/')
     }
   }, [isSignedIn, router, isLoaded])
 

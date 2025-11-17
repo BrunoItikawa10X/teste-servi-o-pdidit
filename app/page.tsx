@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { use, useState } from "react";
 
 function formatCPF(value: string) {
     const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -18,6 +19,8 @@ export default function CadastroPage() {
     const [error, setError] = useState<string | null>(null);
     const [echoResponse, setEchoResponse] = useState<any>(null);
     const [showModal, setShowModal] = useState(false);
+
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -149,7 +152,7 @@ export default function CadastroPage() {
                                     Cancelar
                                 </button>
                                 <button
-                                    onClick={confirmAndSubmit}
+                                    onClick={() => router.push('/verificacao')}
                                     className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
                                 >
                                     Confirmar

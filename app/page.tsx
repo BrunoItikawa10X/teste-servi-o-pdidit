@@ -1,216 +1,164 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
 
-export default function Home() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+function formatCPF(value: string) {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return digits.replace(/^(\d{3})(\d+)/, '$1.$2');
+    if (digits.length <= 9) return digits.replace(/^(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+    return digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+}
 
-  const startVerification = async () => {
-    setLoading(true);
-    setError(null);
+export default function CadastroPage() {
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [cpf, setCPF] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [echoResponse, setEchoResponse] = useState<any>(null);
+    const [showModal, setShowModal] = useState(false);
 
-    try {
-      const response = await fetch('/api/didit/create-session', {
-        method: 'POST',
-      });
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        
+        // Validate CPF has 11 digits
+        const rawCPF = cpf.replace(/\D/g, '');
+        if (rawCPF.length !== 11) {
+            setError('CPF deve ter 11 dígitos');
+            return;
+        }
+        
+        // Show confirmation modal
+        setShowModal(true);
+    };
 
-      if (!response.ok) {
-        throw new Error('Falha ao criar sessão de verificação');
-      }
-
-      const data = await response.json();
-
-      // Persistir ID da sessão para fallback na página de sucesso
-      const createdSessionId = data.session_id || data.id;
-      if (createdSessionId) {
+    const confirmAndSubmit = async () => {
+        setShowModal(false);
+        setLoading(true);
+        
         try {
-          localStorage.setItem('didit_session_id', createdSessionId);
-        } catch {}
-      }
-      
-      // Redirecionar para a URL de verificação do Didit
-      const url = data.verification_url || data.url;
-      if (url) {
-        // Mobile-friendly redirect: replace keeps history clean and avoids popup blockers
-        window.location.replace(url);
-      } else {
-        console.error('Resposta da criação de sessão inesperada:', data);
-        throw new Error('URL de verificação não encontrada');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro desconhecido');
-      setLoading(false);
-    }
-  };
+            const rawCPF = cpf.replace(/\D/g, '');
+            
+            // Send form to /api/echo and display the returned payload
+            const echoRes = await fetch('/api/echo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, cpf: rawCPF }),
+            });
+            
+            if (!echoRes.ok) throw new Error('Falha ao enviar dados');
+            const echoData = await echoRes.json();
+            setEchoResponse(echoData);
+            setLoading(false);
+        } catch (err: any) {
+            setError(err?.message || "Erro desconhecido");
+            setLoading(false);
+        }
+    };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 font-sans px-4">
-      <main className="w-full max-w-md">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Verificação de Identidade
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Precisamos verificar sua identidade para continuar
-            </p>
-          </div>
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-green-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 font-sans px-4">
+            <main className="w-full max-w-md">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
+                        Página de Cadastro
+                    </h1>
 
-          {/* Info Cards */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <svg
-                className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div className="text-sm">
-                <p className="font-medium text-blue-900 dark:text-blue-100">
-                  Processo rápido e seguro
-                </p>
-                <p className="text-blue-700 dark:text-blue-300">
-                  Leva apenas alguns minutos
-                </p>
-              </div>
-            </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome</label>
+                            <input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-200 bg-white px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-900 dark:border-gray-700"
+                                placeholder="Seu nome"
+                                required
+                            />
+                        </div>
 
-            <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <svg
-                className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              <div className="text-sm">
-                <p className="font-medium text-green-900 dark:text-green-100">
-                  Seus dados estão protegidos
-                </p>
-                <p className="text-green-700 dark:text-green-300">
-                  Criptografia de ponta a ponta
-                </p>
-              </div>
-            </div>
-          </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-200 bg-white px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-900 dark:border-gray-700"
+                                placeholder="you@example.com"
+                                required
+                            />
+                        </div>
 
-          {/* Requirements */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Você precisará de:
-            </p>
-            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></span>
-                Documento de identidade válido
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></span>
-                Câmera habilitada
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></span>
-                Boa iluminação
-              </li>
-            </ul>
-          </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF</label>
+                            <input
+                                type="text"
+                                value={cpf}
+                                onChange={(e) => setCPF(formatCPF(e.target.value))}
+                                inputMode="numeric"
+                                maxLength={14}
+                                className="mt-1 block w-full rounded-md border-gray-200 bg-white px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-900 dark:border-gray-700"
+                                placeholder="000.000.000-00"
+                                required
+                            />
+                        </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-800 dark:text-red-200 text-center">
-                {error}
-              </p>
-            </div>
-          )}
+                        {error && (
+                            <div className="text-sm text-red-600 dark:text-red-300">{error}</div>
+                        )}
 
-          {/* Action Button */}
-          <button
-            onClick={startVerification}
-            disabled={loading}
-            className="w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <svg
-                  className="animate-spin h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Carregando...
-              </>
-            ) : (
-              <>
-                Iniciar Verificação
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </>
-            )}
-          </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                        >
+                            {loading ? 'Enviando...' : 'Enviar'}
+                        </button>
+                    </form>
+                    {echoResponse && (
+                        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-md text-sm">
+                            <div className="font-medium mb-2">Resposta do servidor (echo):</div>
+                            <pre className="text-xs overflow-auto max-h-40">{JSON.stringify(echoResponse, null, 2)}</pre>
+                        </div>
+                    )}
+                </div>
 
-          <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            Ao continuar, você concorda com nossos termos de serviço e política de privacidade
-          </p>
+                {/* Modal de Confirmação CPF */}
+                {showModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full space-y-4">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">
+                                Confirme seu CPF
+                            </h2>
+                            
+                            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-center">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                    Por favor, confirme que seu CPF está correto:
+                                </p>
+                                <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">
+                                    {cpf}
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="flex-1 py-2.5 px-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-lg transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmAndSubmit}
+                                    className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
+                                >
+                                    Confirmar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </main>
         </div>
-      </main>
-    </div>
-  );
+    );
 }

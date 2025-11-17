@@ -13,7 +13,8 @@ export async function POST(request: Request) {
     // Aqui você pode adicionar lógica adicional baseada no status
     // Por exemplo: salvar em banco de dados, enviar notificação, etc.
     
-    return NextResponse.json({ received: true });
+    // Echo the received payload back for debugging/testing
+    return NextResponse.json({ received: true, payload: body });
   } catch (error) {
     console.error('Error processing webhook:', error);
     return NextResponse.json(

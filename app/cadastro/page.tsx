@@ -22,13 +22,21 @@ export default function CadastroPage() {
         e.preventDefault();
         setError(null);
         setLoading(true);
+        
         try {
+            // Validate CPF has 11 digits
+            const rawCPF = cpf.replace(/\D/g, '');
+            if (rawCPF.length !== 11) {
+                throw new Error('CPF deve ter 11 dígitos');
+            }
+            
             // Send form to /api/echo and display the returned payload
             const echoRes = await fetch('/api/echo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, cpf }),
+                body: JSON.stringify({ name, email, cpf: rawCPF }),
             });
+            
             if (!echoRes.ok) throw new Error('Falha ao enviar dados');
             const echoData = await echoRes.json();
             setEchoResponse(echoData);
@@ -70,20 +78,20 @@ export default function CadastroPage() {
                                 required
                             />
                         </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF</label>
-                                <input
-                                    type="text"
-                                    value={cpf}
-                                    onChange={(e) => setCPF(formatCPF(e.target.value))}
-                                    inputMode="numeric"
-                                    pattern="\d*"
-                                    className="mt-1 block w-full rounded-md border-gray-200 bg-white px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-900 dark:border-gray-700"
-                                    placeholder="000.000.000-00"
-                                    required
-                                />
-                            </div>
 
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF</label>
+                            <input
+                                type="text"
+                                value={cpf}
+                                onChange={(e) => setCPF(formatCPF(e.target.value))}
+                                inputMode="numeric"
+                                maxLength={14}
+                                className="mt-1 block w-full rounded-md border-gray-200 bg-white px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-900 dark:border-gray-700"
+                                placeholder="000.000.000-00"
+                                required
+                            />
+                        </div>
 
                         {error && (
                             <div className="text-sm text-red-600 dark:text-red-300">{error}</div>
